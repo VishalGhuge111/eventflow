@@ -22,7 +22,10 @@ $events = $stmt->fetchAll();
     <?php foreach ($events as $event) { ?>
         <div style="border:1px solid #ccc; padding:10px; margin-bottom:10px;">
             
-            <h3><?php echo $event['name']; ?></h3>
+            <h3><a href="event.php?id=<?php echo $event['id']; ?>">
+                    <?php echo $event['name']; ?>
+                </a>
+            </h3>
             
             <p><strong>Location:</strong> <?php echo $event['location']; ?></p>
             
