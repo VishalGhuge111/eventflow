@@ -1,7 +1,7 @@
 <?php
 require '../config/db.php';
 
-// Step 1: Validate ID
+// Validate ID
 if (!isset($_GET['id'])) {
     echo "Invalid request";
     exit();
@@ -9,7 +9,7 @@ if (!isset($_GET['id'])) {
 
 $event_id = $_GET['id'];
 
-// Step 2: Fetch event
+// Fetch event
 $stmt = $pdo->prepare("SELECT * FROM events WHERE id = ?");
 $stmt->execute([$event_id]);
 $event = $stmt->fetch();
@@ -19,7 +19,7 @@ if (!$event) {
     exit();
 }
 
-// Step 3: Handle form submission
+// Handle form submission
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
     $name = $_POST['name'];
@@ -30,25 +30,35 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $year = $_POST['year'];
 
     try {
-        $stmt = $pdo->prepare("INSERT INTO registrations 
-            (event_id, name, email, phone, college, branch, year) 
-            VALUES (?, ?, ?, ?, ?, ?, ?)");
+        // 🔥 STEP 1: Check seats
+        if ($event['total_seats'] <= 0) {
+            $error = "Sorry, this event is full.";
+        } else {
 
-        $stmt->execute([
-            $event_id,
-            $name,
-            $email,
-            $phone,
-            $college,
-            $branch,
-            $year
-        ]);
+            // 🔥 STEP 2: Insert registration
+            $stmt = $pdo->prepare("INSERT INTO registrations 
+                (event_id, name, email, phone, college, branch, year) 
+                VALUES (?, ?, ?, ?, ?, ?, ?)");
 
-        $success = "Registered successfully!";
+            $stmt->execute([
+                $event_id,
+                $name,
+                $email,
+                $phone,
+                $college,
+                $branch,
+                $year
+            ]);
+
+            // 🔥 STEP 3: Decrease seat
+            $stmt = $pdo->prepare("UPDATE events SET total_seats = total_seats - 1 WHERE id = ?");
+            $stmt->execute([$event_id]);
+
+            $success = "Registered successfully!";
+        }
 
     } catch (PDOException $e) {
 
-        // Duplicate error (UNIQUE constraint)
         if ($e->getCode() == 23000) {
             $error = "You have already registered for this event.";
         } else {
@@ -71,7 +81,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 <p><strong>Location:</strong> <?php echo $event['location']; ?></p>
 <p><strong>Date:</strong> <?php echo $event['event_date']; ?></p>
 <p><strong>Deadline:</strong> <?php echo $event['deadline']; ?></p>
-<p><strong>Total Seats:</strong> <?php echo $event['total_seats']; ?></p>
+<p><strong>Available Seats:</strong> <?php echo $event['total_seats']; ?></p>
 
 <hr>
 
